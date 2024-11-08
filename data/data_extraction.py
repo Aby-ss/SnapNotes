@@ -1,34 +1,31 @@
+import os
 from rich import print
-from rich.traceback import install
-install(show_locals=True)
 
-import newspaper
-from transformers import pipeline, BartForConditionalGeneration, BartTokenizer
+# Path to the directory containing article files
+directory_path = "./articles"
 
-# Summarization Pipeline with Hugging Face BART
-def setup_summarizer():
-    summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
-    return summarizer
-
-# Extract and Summarize the Article
-def summarize_article(url):
-    # Set up the summarizer
-    summarizer = setup_summarizer()
+def read_article_file(file_path):
+    with open(file_path, "r") as file:
+        content = file.read()
     
-    # Fetch the article
-    article = newspaper.Article(url)
-    article.download()
-    article.parse()
+    # Split content by markers
+    try:
+        article_content = content.split("Article:")[1].split("Article Summary:")[0].strip()
+        article_summary = content.split("Article Summary:")[1].strip()
+        return article_content, article_summary
+    except IndexError:
+        print(f"[bold red]Error in file format:[/bold red] {file_path}")
+        return None, None
 
-    # Display the full article text
-    print("[bold cyan]Full Article Text:[/bold cyan]")
-    print(article.text)
-    
-    # Summarize the article
-    summary = summarizer(article.text, max_length=130, min_length=30, do_sample=False)
-    print("\n[bold green]Summary:[/bold green]")
-    print(summary[0]['summary_text'])
-
-# Example Usage
-url = "https://www.bbc.com/news/world-europe-60603432"  # Replace with your desired news article URL
-summarize_article(url)
+# Process each file in the directory
+for filename in os.listdir(directory_path):
+    if filename.endswith(".txt"):
+        file_path = os.path.join(directory_path, filename)
+        article_content, article_summary = read_article_file(file_path)
+        
+        if article_content and article_summary:
+            print(f"\n[bold cyan]File:[/bold cyan] {filename}")
+            print(f"[bold yellow]Article:[/bold yellow] {article_content}")
+            print(f"[bold green]Summary:[/bold green] {article_summary}")
+        else:
+            print(f"[bold red]Skipping file due to format error:[/bold red] {filename}")
